@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class KeyObfuscator {
-	protected final String mask; // Format regular expression
 	protected final long salt; // Encryption key
+	protected final String mask; // Format regular expression
 	protected final Pattern regex; // Compiled regular expression
 	protected final short[] bases; // List of digit bases (max 62)
 	protected final String[] maps; // List of character maps (any combination of [0-9], [a-z] and [A-Z])
@@ -39,7 +39,8 @@ public class KeyObfuscator {
 
 	protected String filterMask(String mask) throws InvalidMaskException {
 		if (mask.isEmpty()) throw new InvalidMaskException("Empty");
-		mask = Pattern.compile("\\(.+(\\]\\[).+\\)").matcher(mask).replaceAll("])([");
+		Pattern pattern = Pattern.compile("(\\(.+?)\\]\\[");
+		while (pattern.matcher(mask).lookingAt()) mask = pattern.matcher(mask).replaceAll("$1])([");
 		if (!mask.startsWith("^")) mask = "^" + mask;
 		if (!mask.endsWith("$")) mask += "$";
 		return mask;
