@@ -3,9 +3,13 @@ package tools.obfuscation.keyobfuscator;
 import tools.obfuscation.keyobfuscator.exception.InvalidInputException;
 import tools.obfuscation.keyobfuscator.exception.InvalidMaskException;
 
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 public class KeyObfuscator {
 	protected final String mask; // Format regular expression
 	protected final long salt; // Encryption key
+	protected final Pattern regex; // Compiled regular expression
 	protected final short[] bases; // List of digit bases (max 62)
 	protected final String[] maps; // List of character maps (any combination of [0-9], [a-z] and [A-Z])
 	protected final short length; // Number of digits of the input (quite limited, cause stored in a long)
@@ -16,10 +20,10 @@ public class KeyObfuscator {
 	protected static final boolean DECRYPT = false;
 
 	public KeyObfuscator(String mask, long salt) throws InvalidMaskException {
-		this.mask = mask;
 		this.salt = salt;
 
-		checkMaskValidity();
+		this.mask = filterMask(mask);
+		this.regex = compileRegex();
 		this.bases = computeBases();
 		this.maps = computeMaps();
 
@@ -33,9 +37,20 @@ public class KeyObfuscator {
 		if (weight > 63) throw new InvalidMaskException("TooLong");
 	}
 
-	protected void checkMaskValidity() throws InvalidMaskException {
+	protected String filterMask(String mask) throws InvalidMaskException {
 		if (mask.isEmpty()) throw new InvalidMaskException("Empty");
-		// TODO
+		mask = Pattern.compile("\\(.+(\\]\\[).+\\)").matcher(mask).replaceAll("])([");
+		if (!mask.startsWith("^")) mask = "^" + mask;
+		if (!mask.endsWith("$")) mask += "$";
+		return mask;
+	}
+
+	protected Pattern compileRegex() throws InvalidMaskException {
+		try {
+			return Pattern.compile(mask);
+		} catch (PatternSyntaxException e) {
+			throw new InvalidMaskException(e.getClass().getName(), e);
+		}
 	}
 
 	protected short[] computeBases() {
@@ -69,7 +84,7 @@ public class KeyObfuscator {
 	protected void checkInputValidity(String input) throws InvalidInputException {
 		if (input.isEmpty()) throw new InvalidInputException("Empty");
 		if (input.length() != length) throw new InvalidInputException("BadLength");
-		// TODO
+		if (regex.matcher(input).matches()) throw new InvalidInputException("BadFormat");
 	}
 
 	protected long stringToLong(String input) {
@@ -86,7 +101,6 @@ public class KeyObfuscator {
 		String output = "";
 
 		for (int i = length - 1; i >= 0; i--) {
-			// TODO: Optimize string concatenation
 			output = maps[i].charAt((int) input % bases[i]) + output;
 			input /= bases[i];
 		}

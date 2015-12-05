@@ -1,13 +1,13 @@
 package tools.obfuscation.keyobfuscator.exception;
 
 public class InvalidInputException extends Exception {
-	private final String subType;
+	private final String message;
 
-	public InvalidInputException(String subType) {
-		this.subType = subType;
+	public InvalidInputException(String message) {
+		this.message = message;
 	}
 
 	public String getMessage() {
-		return super.getMessage() + ", " + subType;
+		return message;
 	}
 }
