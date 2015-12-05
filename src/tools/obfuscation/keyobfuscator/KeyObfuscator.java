@@ -4,13 +4,16 @@ import tools.obfuscation.keyobfuscator.exception.InvalidInputException;
 import tools.obfuscation.keyobfuscator.exception.InvalidMaskException;
 
 public class KeyObfuscator {
-	private final String mask; // Format regular expression
-	private final long salt; // Encryption key
-	private final short[] bases; // List of digit bases (max 62)
-	private final String[] maps; // List of character maps (any combination of [0-9], [a-z] and [A-Z])
-	private final short length; // Number of digits of the input (quite limited, cause stored in a long)
-	private final long size; // Maximum numeric value of the input + 1
-	private final int weight; // Maximum binary length of the input (how many bits)
+	protected final String mask; // Format regular expression
+	protected final long salt; // Encryption key
+	protected final short[] bases; // List of digit bases (max 62)
+	protected final String[] maps; // List of character maps (any combination of [0-9], [a-z] and [A-Z])
+	protected final short length; // Number of digits of the input (quite limited, cause stored in a long)
+	protected final long size; // Maximum numeric value of the input + 1
+	protected final int weight; // Maximum binary length of the input (how many bits)
+
+	protected static final boolean ENCRYPT = true;
+	protected static final boolean DECRYPT = false;
 
 	public KeyObfuscator(String mask, long salt) throws InvalidMaskException {
 		this.mask = mask;
@@ -30,17 +33,17 @@ public class KeyObfuscator {
 		if (weight > 63) throw new InvalidMaskException("TooLong");
 	}
 
-	private void checkMaskValidity() throws InvalidMaskException {
+	protected void checkMaskValidity() throws InvalidMaskException {
 		if (mask.isEmpty()) throw new InvalidMaskException("Empty");
 		// TODO
 	}
 
-	private short[] computeBases() {
+	protected short[] computeBases() {
 		// TODO
 		return new short[]{10, 26, 62};
 	}
 
-	private String[] computeMaps() {
+	protected String[] computeMaps() {
 		// TODO
 		String[] output = new String[3];
 		output[0] = "0123456789";
@@ -52,28 +55,34 @@ public class KeyObfuscator {
 	public String encrypt(String input) throws InvalidInputException {
 		checkInputValidity(input);
 		long inputValue = stringToLong(input);
-		long outputValue = rawEncrypt(inputValue);
+		long outputValue = crypt(inputValue, ENCRYPT);
 		return longToString(outputValue);
 	}
 
-	private void checkInputValidity(String input) throws InvalidInputException {
+	public String decrypt(String input) throws InvalidInputException {
+		checkInputValidity(input);
+		long inputValue = stringToLong(input);
+		long outputValue = crypt(inputValue, DECRYPT);
+		return longToString(outputValue);
+	}
+
+	protected void checkInputValidity(String input) throws InvalidInputException {
 		if (input.isEmpty()) throw new InvalidInputException("Empty");
 		if (input.length() != length) throw new InvalidInputException("BadLength");
 		// TODO
 	}
 
-	private long stringToLong(String input) {
-		long output;
+	protected long stringToLong(String input) {
+		long output = 0;
 
-		output = maps[0].indexOf(input.charAt(0));
-		for (int i = 1; i < length; i++) {
-			output = output * bases[i - 1] + maps[i].indexOf(input.charAt(i));
+		for (int i = 0; i < length; i++) {
+			output = output * bases[i] + maps[i].indexOf(input.charAt(i));
 		}
 
 		return output;
 	}
 
-	private String longToString(long input) {
+	protected String longToString(long input) {
 		String output = "";
 
 		for (int i = length - 1; i >= 0; i--) {
@@ -85,21 +94,23 @@ public class KeyObfuscator {
 		return output;
 	}
 
-	private long rawEncrypt(long input) {
-		long output;
+	protected long crypt(long input, boolean way) {
+		long output = input;
 
-		output = (input + salt) % size;
+		if (way) output = (output + salt) % size;
 
 		int limit = weight / 2;
 		for (int i = 0; i < limit; i++) {
 			// IF i is even XOR the bit of the salt at this offset is set, THEN switch bits
 			if (((i + 1) % 2) != (salt >> i & 1)) {
-				if ((input >> i & 1) != (input >> (weight - 1 - i) & 1)) {
+				if ((output >> i & 1) != (output >> (weight - 1 - i) & 1)) {
 					output = output ^ (1 << i);
 					output = output ^ (1 << (weight - 1 - i));
 				}
 			}
 		}
+
+		if (!way) output = output + size - (salt % size);
 
 		return output;
 	}
