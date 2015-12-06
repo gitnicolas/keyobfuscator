@@ -85,7 +85,7 @@ public class KeyObfuscator {
 	protected void checkInputValidity(String input) throws InvalidInputException {
 		if (input.isEmpty()) throw new InvalidInputException("Empty");
 		if (input.length() != length) throw new InvalidInputException("BadLength");
-		if (regex.matcher(input).matches()) throw new InvalidInputException("BadFormat");
+		if (!regex.matcher(input).matches()) throw new InvalidInputException("BadFormat");
 	}
 
 	protected long stringToLong(String input) {

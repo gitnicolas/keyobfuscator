@@ -19,7 +19,8 @@ public class Main {
 			}
 
 			String input = "5cD";
-			assert keyObfuscator.decrypt(keyObfuscator.encrypt(input)).equals(input);
+			String output = keyObfuscator.decrypt(keyObfuscator.encrypt(input));
+			assert output.equals(input);
 
 			System.out.println("Ended successfully !");
 			System.exit(0);
